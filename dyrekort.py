@@ -1,5 +1,8 @@
 import time
 import operator
+import itertools
+
+import matplotlib.pyplot as plt
 
 
 def binomial(N):
@@ -104,11 +107,25 @@ def prob(ns, k):
 def main():
     k = 140
     t0 = t1 = time.time()
-    for n, result in prob(range(0, 1000, 5), k):
+    data = []
+    n_max = None
+    for n, result in prob(itertools.count(), k):
         t2 = time.time()
         print('%d\t%7.4f\t%s' % (n, t2 - t1, result.a_over_b))
         t1 = t2
+        data.append((n, result.a_over_b))
+        if result.a_over_b > 0.5:
+            if n_max is None:
+                n_max = 2 * n
+            elif n >= n_max:
+                break
     print('Total\t%7.4f' % (t2 - t0,))
+    xs, ys = zip(*data)
+    plt.plot(xs, ys)
+    plt.xlabel('Antal dyrekort')
+    plt.ylabel('Sandsynlighed for at have alle %d' % k)
+    plt.grid()
+    plt.show()
 
 
 if __name__ == "__main__":
