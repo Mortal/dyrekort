@@ -1,82 +1,14 @@
+"""
+Solution to the n balls in k bins for fixed k and variable n.
+Requires the arbitrary precision integers of Python 3.
+"""
+
+import sys
 import time
 import operator
 import itertools
 
 import matplotlib.pyplot as plt
-
-
-def binomial(N):
-    B = []
-    for n in range(N + 1):
-        B.append((N + 1) * [0])
-        for k in range(N + 1):
-            # n choose k
-            if k == 0 or k == n:
-                B[n][k] = 1
-            elif n == 0:
-                B[n][k] = 0
-            else:
-                B[n][k] = B[n - 1][k] + B[n - 1][k - 1]
-    return B
-
-
-def gcd(a, b):
-    while b != 0:
-        a, b = b, a % b
-    return a
-
-
-def reduce(f, A):
-    A = list(A)  # make copy
-    n = len(A)
-    while n > 1:
-        n, d = divmod(n, 2)
-        for i in range(n):
-            # s = 'f(%s,%s) = ' % (A[2*i], A[2*i + 1])
-            A[i] = f(A[2*i], A[2*i + 1])
-            # print("%s%s" % (s, A[i]))
-        if d:
-            A[n] = A[2*n]
-            n += 1
-    return A[0]
-
-
-def multi_gcd(A):
-    return reduce(gcd, A)
-
-
-def product(A):
-    return reduce(operator.mul, A)
-
-
-def timer(label):
-    t0 = time.time()
-    def next(s):
-        nonlocal label
-        nonlocal t0
-        t1 = time.time()
-        print("%-20s %7.4f s" % (label + ':', t1 - t0))
-        label = s
-        t0 = t1
-    return next
-
-
-def reduce_fraction(a, b):
-    d = gcd(a, b)
-    a = divmod(a, d)[0]
-    b = divmod(b, d)[0]
-    return a, b
-
-
-class Fraction(object):
-    def __init__(self, a, b):
-        self.a, self.b = reduce_fraction(a, b)
-        try:
-            self.a_over_b = float(self.a) / float(self.b)
-        except OverflowError:
-            precision = 2 ** 50
-            approx_numerator = divmod(self.a * precision, self.b)[0]
-            self.a_over_b = approx_numerator / float(precision)
 
 
 def prob(ns, k):
@@ -88,6 +20,7 @@ def prob(ns, k):
     Generates a list of tuples (n, probability), where each probability
     is a Fraction.
     """
+
     B = binomial(k)
     numerators = [
         (-1) ** j * B[k][j]
@@ -104,22 +37,70 @@ def prob(ns, k):
         yield n, Fraction(sum(numerators), denominator)
 
 
+def binomial(N):
+    """Returns B such that B[n][k] = n choose k for 0 <= n, k <= N"""
+    B = []
+    for n in range(N + 1):
+        B.append((N + 1) * [0])
+        for k in range(N + 1):
+            # n choose k
+            if k == 0 or k == n:
+                B[n][k] = 1
+            elif n == 0:
+                B[n][k] = 0
+            else:
+                B[n][k] = B[n - 1][k] + B[n - 1][k - 1]
+    return B
+
+
+class Fraction(object):
+    def __init__(self, a, b):
+        d = self.gcd(a, b)
+        self.a = divmod(a, d)[0]
+        self.b = divmod(b, d)[0]
+
+        # The largest float has exponent=1023 and mantissa=all 1's
+        maxfloat = sum(2 ** i for i in range(1023 - 52, 1023 + 1))
+        approx_numerator = divmod(self.a * maxfloat, self.b)[0]
+        self.a_over_b = approx_numerator / maxfloat
+
+    @staticmethod
+    def gcd(a, b):
+        """Euclid's algorithm to compute the greatest common divisor"""
+        while b != 0:
+            a, b = b, a % b
+        return a
+
+
 def main():
     k = 140
-    t0 = t1 = time.time()
     data = []
     n_max = None
+    i = 0
+    t0 = time.time()
     for n, result in prob(itertools.count(), k):
-        t2 = time.time()
-        print('%d\t%7.4f\t%s' % (n, t2 - t1, result.a_over_b))
-        t1 = t2
         data.append((n, result.a_over_b))
+
+        i += 1
+        if i == 10:
+            print('%6d:\t%s' %
+                  (data[-i][0],
+                   ''.join('%6.2f%%' % (100 * p,) for n, p in data[-i:])))
+            i = 0
+
         if result.a_over_b > 0.5:
             if n_max is None:
                 n_max = 2 * n
             elif n >= n_max:
                 break
-    print('Total\t%7.4f' % (t2 - t0,))
+
+    if i != 0:
+        print('%6d:\t%s' %
+              (data[-i][0],
+               ''.join('%6.2f%%' % (100 * p,) for n, p in data[-i:])))
+
+    t1 = time.time()
+    print('Time taken: %.4f s' % (t1 - t0,))
     xs, ys = zip(*data)
     plt.plot(xs, ys)
     plt.xlabel('Antal dyrekort')
