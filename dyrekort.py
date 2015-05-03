@@ -76,35 +76,35 @@ class Fraction(object):
             self.a_over_b = approx_numerator / float(precision)
 
 
-def prob(balls, bins):
-    # t = timer('binomial')
-    t = lambda s: None
-    B = binomial(bins)
-    t('factors')
-    factors = [
-        (-1) ** j * B[bins][j]
-        for j in range(bins + 1)
-    ]
-    t('numerators')
+def prob(ns, k):
+    """[(n, {n balls in k bins}) for n in `ns`]
+
+    Computes the probability of all k bins being occupied after throwing
+    n balls into them for n in ns.
+
+    Generates a list of tuples (n, probability), where each probability
+    is a Fraction.
+    """
+    B = binomial(k)
     numerators = [
-        factor * (bins - j) ** balls
-        for j, factor in enumerate(factors)
+        (-1) ** j * B[k][j]
+        for j in range(k + 1)
     ]
-    t('denominators')
-    denominator = bins ** balls
-    t('result')
-    result = Fraction(sum(numerators), denominator)
-    t('')
-    return result
+    denominator = 1
+    prev = 0
+    for n in ns:
+        skip = n - prev
+        for i in range(len(numerators)):
+            numerators[i] *= (k - i) ** skip
+        denominator *= k ** skip
+        prev = n
+        yield n, Fraction(sum(numerators), denominator)
 
 
 def main():
-    # n = 743
-    # range(0, 1000): 15.9965
     k = 140
     t0 = t1 = time.time()
-    for n in range(0, 1000):
-        result = prob(n, k)
+    for n, result in prob(range(0, 1000, 5), k):
         t2 = time.time()
         print('%d\t%7.4f\t%s' % (n, t2 - t1, result.a_over_b))
         t1 = t2
