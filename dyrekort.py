@@ -65,8 +65,20 @@ def reduce_fraction(a, b):
     return a, b
 
 
+class Fraction(object):
+    def __init__(self, a, b):
+        self.a, self.b = reduce_fraction(a, b)
+        try:
+            self.a_over_b = float(self.a) / float(self.b)
+        except OverflowError:
+            precision = 2 ** 50
+            approx_numerator = divmod(self.a * precision, self.b)[0]
+            self.a_over_b = approx_numerator / float(precision)
+
+
 def prob(balls, bins):
-    t = timer('binomial')
+    # t = timer('binomial')
+    t = lambda s: None
     B = binomial(bins)
     t('factors')
     factors = [
@@ -81,23 +93,22 @@ def prob(balls, bins):
     t('denominators')
     denominator = bins ** balls
     t('result')
-    numerator = sum(numerators)
-    t('to float')
-    numerator, denominator = reduce_fraction(numerator, denominator)
-    try:
-        result = float(numerator) / float(denominator)
-    except OverflowError:
-        precision = 2 ** 50
-        approx_numerator = divmod(numerator * precision, denominator)[0]
-        result = approx_numerator / float(precision)
+    result = Fraction(sum(numerators), denominator)
+    t('')
     return result
 
 
 def main():
-    n = 743
+    # n = 743
+    # range(0, 1000): 15.9965
     k = 140
-    result = prob(n, k)
-    print(result)
+    t0 = t1 = time.time()
+    for n in range(0, 1000):
+        result = prob(n, k)
+        t2 = time.time()
+        print('%d\t%7.4f\t%s' % (n, t2 - t1, result.a_over_b))
+        t1 = t2
+    print('Total\t%7.4f' % (t2 - t0,))
 
 
 if __name__ == "__main__":
