@@ -3,9 +3,7 @@ Solution to the n balls in k bins for fixed k and variable n.
 Requires the arbitrary precision integers of Python 3.
 """
 
-import sys
 import time
-import operator
 import itertools
 
 import matplotlib.pyplot as plt
